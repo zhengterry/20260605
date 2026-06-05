@@ -54,30 +54,13 @@ export default function NewRulePage() {
     setMessage("");
 
     try {
-      // 先上传文件到服务端，由服务端统一解析
+      // 直接发送文件给 AI 解析（不存盘）
       const formData = new FormData();
       formData.append("file", sampleFile);
 
-      const uploadRes = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok || !uploadData.success) {
-        setMessage(uploadData.error || "文件上传失败");
-        setAiLoading(false);
-        return;
-      }
-
-      // 调用 AI 生成规则（服务端解析文件内容）
       const res = await fetch("/api/ai-gen", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileId: uploadData.fileId,
-          fileName: uploadData.fileName,
-          fileType: uploadData.fileType,
-        }),
+        body: formData,
       });
 
       const data = await res.json();

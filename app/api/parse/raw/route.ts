@@ -1,32 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateRuleFromFileContent } from "@/lib/aiService";
 
-// ---- 内存文件文本提取 ----
+// ---- 纯内存文件解析器 ----
 
-function excelToText(buffer: Buffer): string {
+function parseExcel(buffer: Buffer): any[][][] {
   const XLSX = require("xlsx");
   const wb = XLSX.read(buffer, { type: "buffer" });
-  const texts: string[] = [];
+  const sheets: any[][][] = [];
   for (const name of wb.SheetNames) {
     const ws = wb.Sheets[name];
-    texts.push(`[Sheet: ${name}]\n${JSON.stringify(XLSX.utils.sheet_to_json(ws, { header: 1 }))}`);
+    sheets.push(XLSX.utils.sheet_to_json(ws, { header: 1 }));
   }
-  return texts.join("\n\n");
+  return sheets;
 }
 
-function wordToText(buffer: Buffer): string {
+function parseWord(buffer: Buffer): any[][][] {
   const mammoth = require("mammoth");
   const result = mammoth.extractRawText({ buffer });
-  return result.value;
+  const lines = result.value.split("\n").filter((l: string) => l.trim());
+  return [[lines.map((l: string) => [l])]];
 }
 
-function pdfToText(buffer: Buffer): string {
+function parsePdf(buffer: Buffer): any[][][] {
   const pdfParse = require("pdf-parse");
   const result = pdfParse(buffer);
-  return result.text;
+  const lines = result.text.split("\n").filter((l: string) => l.trim());
+  return [[lines.map((l: string) => [l])]];
 }
 
-// ---- API：直接接收文件，内存解析后调用 AI 生成规则 ----
+// ---- API：接收文件，返回解析后的原始数据（不存盘、不调 AI） ----
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ext = file.name.split(".").pop()?.toLowerCase() || "";
-    let fileType: "excel" | "word" | "pdf";
+    let fileType: string;
     if (ext === "xlsx" || ext === "xls") fileType = "excel";
     else if (ext === "docx") fileType = "word";
     else if (ext === "pdf") fileType = "pdf";
@@ -48,24 +49,20 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
 
-    // 提取文本内容
-    let content: string;
+    let rawData: any[][][];
     switch (fileType) {
-      case "excel": content = excelToText(buffer); break;
-      case "word":  content = wordToText(buffer);  break;
-      case "pdf":   content = pdfToText(buffer);   break;
+      case "excel": rawData = parseExcel(buffer); break;
+      case "word":  rawData = parseWord(buffer);  break;
+      default:      rawData = parsePdf(buffer);   break;
     }
-
-    // 调用 AI 生成规则
-    const result = await generateRuleFromFileContent(content, fileType, file.name);
 
     return NextResponse.json({
       success: true,
-      config: result.config,
-      name: result.name,
-      confidence: result.confidence,
+      fileType,
+      fileName: file.name,
+      rawData,
     });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message || "AI 规则生成失败" }, { status: 500 });
+    return NextResponse.json({ error: error.message || "文件解析失败" }, { status: 500 });
   }
 }

@@ -38,12 +38,13 @@ export default function UploadPage() {
       if (ext === "xlsx" || ext === "xls") {
         rawData = await parseExcelFile(selectedFile);
       } else {
-        // Word/PDF 需要后端解析
+        // Word/PDF 通过服务端内存解析
         const formData = new FormData();
         formData.append("file", selectedFile);
-        const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-        if (!uploadRes.ok) throw new Error("文件上传失败");
-        rawData = [[[""]]]; // 非 Excel 走文本路径
+        const parseRes = await fetch("/api/parse/raw", { method: "POST", body: formData });
+        const parseData = await parseRes.json();
+        if (!parseRes.ok || !parseData.success) throw new Error(parseData.error || "文件解析失败");
+        rawData = parseData.rawData;
       }
 
       const config = selectedRule.config;

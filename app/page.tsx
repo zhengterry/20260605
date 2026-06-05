@@ -38,7 +38,7 @@ export default function HomePage() {
     router.push("/rules/new");
   };
 
-  // 智能匹配：先本地规则 → 不行再 AI
+  // 智能匹配：上传文件 → 直接调用大模型解析
   const handleAutoMatch = useCallback(async () => {
     if (!selectedFile) {
       setMessage("请先上传文件");
@@ -49,19 +49,16 @@ export default function HomePage() {
     setMessage("正在智能匹配规则...");
 
     try {
-      // 上传文件
+      // 一步到位：上传文件 + AI 解析，不存服务器
       const formData = new FormData();
       formData.append("file", selectedFile);
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      const uploadData = await uploadRes.json();
-      if (!uploadRes.ok) throw new Error(uploadData.error || "文件上传失败");
 
-      // 调用匹配 API（本地规则 → AI 回退）
-      setMessage(uploadData.fileType === "excel" ? "本地规则匹配中..." : "解析文件中...");
+      const ext = selectedFile.name.split(".").pop()?.toLowerCase() || "";
+      setMessage(ext === "xlsx" || ext === "xls" ? "本地规则匹配中..." : "AI 解析文件中...");
+
       const matchRes = await fetch("/api/parse/match", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fileId: uploadData.fileId, fileName: uploadData.fileName, fileType: uploadData.fileType }),
+        body: formData,
       });
       const matchData = await matchRes.json();
 
@@ -73,8 +70,6 @@ export default function HomePage() {
       sessionStorage.setItem("previewRuleId", matchData.ruleId || "auto");
       sessionStorage.setItem("previewRuleConfig", JSON.stringify(matchData.config));
       sessionStorage.setItem("previewFileName", selectedFile.name);
-      sessionStorage.setItem("previewFileType", uploadData.fileType);
-      sessionStorage.setItem("previewFileId", uploadData.fileId);
       sessionStorage.setItem("previewOrders", JSON.stringify(matchData.orders));
 
       const label = matchData.source === "ai" ? `AI 已自动生成规则「${matchData.ruleName}」` : `已匹配本地规则「${matchData.ruleName}」`;
@@ -99,26 +94,25 @@ export default function HomePage() {
     }
 
     setLoading(true);
-    setMessage("");
+    setMessage("正在解析文件...");
 
     try {
-      // 上传文件
+      // 解析文件获取原始数据（不存盘）
       const formData = new FormData();
       formData.append("file", selectedFile);
+      const parseRes = await fetch("/api/parse/raw", { method: "POST", body: formData });
+      const parseData = await parseRes.json();
 
-      const uploadRes = await fetch("/api/upload", { method: "POST", body: formData });
-      const uploadData = await uploadRes.json();
-
-      if (!uploadRes.ok) {
-        throw new Error(uploadData.error || "文件上传失败");
+      if (!parseRes.ok || !parseData.success) {
+        throw new Error(parseData.error || "文件解析失败");
       }
 
-      // 存储到 sessionStorage 供预览页使用
+      // 存储规则配置 + 原始数据到 sessionStorage，供预览页客户端解析
       sessionStorage.setItem("previewRuleId", selectedRule.id);
       sessionStorage.setItem("previewRuleConfig", JSON.stringify(selectedRule.config));
       sessionStorage.setItem("previewFileName", selectedFile.name);
-      sessionStorage.setItem("previewFileType", uploadData.fileType);
-      sessionStorage.setItem("previewFileId", uploadData.fileId);
+      sessionStorage.setItem("previewFileType", parseData.fileType);
+      sessionStorage.setItem("previewFileData", JSON.stringify(parseData.rawData));
 
       router.push("/preview");
     } catch (err: any) {

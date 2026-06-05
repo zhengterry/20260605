@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import MainLayout from "@/components/MainLayout";
 import { executeRule } from "@/lib/ruleEngine";
 import { validateOrders } from "@/lib/validator";
-import { parseExcelFile } from "@/lib/fileParsers";
 import { OrderData, ValidationError } from "@/lib/types";
 import {
   ArrowLeft,
@@ -42,7 +41,6 @@ export default function PreviewPage() {
       const ruleConfigStr = sessionStorage.getItem("previewRuleConfig");
       const fName = sessionStorage.getItem("previewFileName");
       const fileType = (sessionStorage.getItem("previewFileType") || "excel") as "excel" | "word" | "pdf";
-      const fileId = sessionStorage.getItem("previewFileId");
 
       if (!fName) {
         setMessage("未找到解析配置，请返回重新导入");
@@ -64,7 +62,7 @@ export default function PreviewPage() {
       }
 
       // 手动规则模式：客户端重新解析
-      if (ruleConfigStr && fileId) {
+      if (ruleConfigStr) {
         const config = JSON.parse(ruleConfigStr);
         const fileDataStr = sessionStorage.getItem("previewFileData");
         if (fileDataStr) {
