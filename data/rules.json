@@ -1,0 +1,164 @@
+{
+  "rules": [
+    {
+      "id": "rule-delivery-001",
+      "name": "配送发货单",
+      "description": "适用于黎明屯铁锅炖配送发货单格式。特点：头部含收货机构/供货机构等元信息，表格区列数多(41列)，尾部含收货人、电话、地址、单据号。解析模式：标准表格+尾部信息提取。",
+      "fileType": "excel",
+      "config": {
+        "dataSource": { "sheetIndices": [0] },
+        "rowProcessing": { "skipHeaderRows": 4, "skipFooterRows": 4, "aggregationKey": "" },
+        "fieldMappings": [
+          { "targetField": "skuCode",     "sourceType": "column", "sourceColumn": 2,  "transform": "trim" },
+          { "targetField": "skuName",     "sourceType": "column", "sourceColumn": 3,  "transform": "trim" },
+          { "targetField": "skuSpec",     "sourceType": "column", "sourceColumn": 5,  "transform": "trim" },
+          { "targetField": "skuQuantity", "sourceType": "column", "sourceColumn": 14, "transform": "number" },
+          { "targetField": "remark",      "sourceType": "column", "sourceColumn": 40, "transform": "trim" }
+        ],
+        "tailExtraction": {
+          "enabled": true,
+          "patterns": [
+            { "field": "storeName",       "regex": "收货机构\\s+(\\S+?)(?:\\s{2,}|$)", "group": 1 },
+            { "field": "receiverName",    "regex": "收货人\\s+(\\S+?)(?:\\s{2,}|$)",   "group": 1 },
+            { "field": "receiverPhone",   "regex": "收货电话\\s+(\\d+)",               "group": 1 },
+            { "field": "receiverAddress", "regex": "收货地址\\s+(.+?)(?:\\s{2,}|$)",   "group": 1 },
+            { "field": "externalCode",    "regex": "单据号\\s+(\\S+)",                  "group": 1 }
+          ]
+        }
+      },
+      "createdAt": "2026-06-05T12:00:00.000Z",
+      "updatedAt": "2026-06-05T12:00:00.000Z"
+    },
+    {
+      "id": "rule-multi-sheet-001",
+      "name": "多门店分Sheet出库单",
+      "description": "适用于武汉配送中心多门店分Sheet出库单(银泰店/金桥店/金银潭店)。每Sheet:标题→日期→空行→表头→7行数据→合计→空行→收货门店+联系人→联系电话+收货地址→空行→制单人。解析模式：标准表格多Sheet合并。",
+      "fileType": "excel",
+      "config": {
+        "dataSource": { "sheetIndices": [] },
+        "rowProcessing": { "skipHeaderRows": 4, "skipFooterRows": 5, "aggregationKey": "" },
+        "fieldMappings": [
+          { "targetField": "skuCode",         "sourceType": "column", "sourceColumn": 1, "transform": "trim" },
+          { "targetField": "skuName",         "sourceType": "column", "sourceColumn": 2, "transform": "trim" },
+          { "targetField": "skuSpec",         "sourceType": "column", "sourceColumn": 3, "transform": "trim" },
+          { "targetField": "skuQuantity",     "sourceType": "column", "sourceColumn": 5, "transform": "number" },
+          { "targetField": "storeName",       "sourceType": "regex",  "regexPattern": "尹三顺自助烤肉[（(](.+?)[）)]", "regexGroup": 0 }
+        ],
+        "tailExtraction": {
+          "enabled": true,
+          "patterns": [
+            { "field": "receiverName",    "regex": "联系人[：:]\\s*(\\S+)",           "group": 1 },
+            { "field": "receiverPhone",   "regex": "联系电话[：:]\\s*(\\d{7,15})",    "group": 1 },
+            { "field": "receiverAddress", "regex": "收货地址[：:]\\s*(.+?)(?:\\s{2,}|$)", "group": 1 }
+          ]
+        }
+      },
+      "createdAt": "2026-06-05T12:00:00.000Z",
+      "updatedAt": "2026-06-05T12:00:00.000Z"
+    },
+    {
+      "id": "rule-hunan-001",
+      "name": "湖南仓发货明细",
+      "description": "适用于湖南仓库汇总单发货明细格式。第0行提示→第1行列头→第2行起数据；按「配送汇总单号」聚合多行SKU为一个订单；收货机构已在每行数据中。解析模式：标准表格+按汇总单号跨行聚合。",
+      "fileType": "excel",
+      "config": {
+        "dataSource": { "sheetIndices": [0] },
+        "rowProcessing": { "skipHeaderRows": 2, "skipFooterRows": 0, "aggregationKey": "externalCode" },
+        "fieldMappings": [
+          { "targetField": "storeName",    "sourceType": "column", "sourceColumn": 0,  "transform": "trim" },
+          { "targetField": "externalCode", "sourceType": "column", "sourceColumn": 1,  "transform": "trim" },
+          { "targetField": "skuCode",      "sourceType": "column", "sourceColumn": 5,  "transform": "trim" },
+          { "targetField": "skuName",      "sourceType": "column", "sourceColumn": 6,  "transform": "trim" },
+          { "targetField": "skuSpec",      "sourceType": "column", "sourceColumn": 8,  "transform": "trim" },
+          { "targetField": "skuQuantity",  "sourceType": "column", "sourceColumn": 12, "transform": "number" }
+        ]
+      },
+      "createdAt": "2026-06-05T12:00:00.000Z",
+      "updatedAt": "2026-06-05T12:00:00.000Z"
+    },
+    {
+      "id": "rule-huanle-001",
+      "name": "欢乐牧场库存分配模板",
+      "description": "适用于欢乐牧场武汉汉阳仓库存分配模板。列头：仓库名称/货主名称/SKU名称/SKU条码/规格/可用数量等，右侧门店分配列(银泰/金银潭/金桥/门店B/门店D)标记。解析模式：矩阵转置，门店列横向转纵向。",
+      "fileType": "excel",
+      "config": {
+        "dataSource": { "sheetIndices": [0] },
+        "rowProcessing": { "skipHeaderRows": 1, "skipFooterRows": 0, "aggregationKey": "" },
+        "fieldMappings": [
+          { "targetField": "storeName", "sourceType": "column", "sourceColumn": 1, "transform": "trim" }
+        ],
+        "matrixTranspose": {
+          "enabled": true,
+          "storeColumns": ["银泰", "金银潭", "金桥", "门店B", "门店D"],
+          "skuNameColumn": 2,
+          "skuCodeColumn": 3,
+          "skuSpecColumn": 7,
+          "quantityColumn": 9
+        }
+      },
+      "createdAt": "2026-06-05T12:00:00.000Z",
+      "updatedAt": "2026-06-05T12:00:00.000Z"
+    },
+    {
+      "id": "rule-transfer-card-001",
+      "name": "门店调拨单（卡片式）",
+      "description": "适用于武汉配送中心门店调拨单卡片式格式。以「▶ 调拨记录 #N」为卡片边界，每卡片含调入门店/收货人/电话/地址及物品编码/名称/规格/数量明细。解析模式：卡片式识别+字段映射。",
+      "fileType": "excel",
+      "config": {
+        "dataSource": { "sheetIndices": [0] },
+        "rowProcessing": {
+          "skipHeaderRows": 0,
+          "skipFooterRows": 0,
+          "cardBoundary": { "markerPattern": "^▶ 调拨记录", "includeMarker": false }
+        },
+        "fieldMappings": [
+          { "targetField": "storeName",       "sourceType": "regex",  "regexPattern": "调入门店\\s+(.+?)\\s+收货人",     "regexGroup": 1 },
+          { "targetField": "receiverName",    "sourceType": "regex",  "regexPattern": "收货人\\s+(.+?)\\s+电话",        "regexGroup": 1 },
+          { "targetField": "receiverPhone",   "sourceType": "regex",  "regexPattern": "电话\\s+(\\d{7,15})",            "regexGroup": 1 },
+          { "targetField": "receiverAddress", "sourceType": "regex",  "regexPattern": "收货地址\\s+(.+?)(?:\\s{2,}|$)",  "regexGroup": 1 },
+          { "targetField": "externalCode",    "sourceType": "regex",  "regexPattern": "调拨单号[：:]\\s*(\\S+)",        "regexGroup": 1 },
+          { "targetField": "skuCode",         "sourceType": "regex",  "regexPattern": "^([A-Z]+\\d{4,})",               "regexGroup": 1 },
+          { "targetField": "skuName",         "sourceType": "column", "sourceColumn": 1,  "transform": "trim" },
+          { "targetField": "skuSpec",         "sourceType": "column", "sourceColumn": 2,  "transform": "trim" },
+          { "targetField": "skuQuantity",     "sourceType": "column", "sourceColumn": 3,  "transform": "number" }
+        ]
+      },
+      "createdAt": "2026-06-05T12:00:00.000Z",
+      "updatedAt": "2026-06-05T12:00:00.000Z"
+    },
+    {
+      "id": "rule-pdf-001",
+      "name": "PDF出库单通用",
+      "description": "适用于标准PDF出库单/调拨单格式。纯文本解析模式，通过正则匹配提取门店、收货人、联系电话、地址、SKU明细等字段。",
+      "fileType": "pdf",
+      "config": {
+        "dataSource": {},
+        "rowProcessing": { "skipHeaderRows": 0, "skipFooterRows": 0, "aggregationKey": "" },
+        "fieldMappings": [
+          { "targetField": "storeName",       "sourceType": "regex", "regexPattern": "(?:门店|收货机构|调入门店)[：:\\s]*(.+)",       "regexGroup": 1 },
+          { "targetField": "receiverName",    "sourceType": "regex", "regexPattern": "(?:收货人|联系人)[：:\\s]*(.+)",               "regexGroup": 1 },
+          { "targetField": "receiverPhone",   "sourceType": "regex", "regexPattern": "(?:电话|手机|联系电话)[：:\\s]*(\\d{7,15})",   "regexGroup": 1 },
+          { "targetField": "receiverAddress", "sourceType": "regex", "regexPattern": "(?:地址|收货地址|详细地址)[：:\\s]*(.+)",       "regexGroup": 1 },
+          { "targetField": "externalCode",    "sourceType": "regex", "regexPattern": "(?:单号|单据号|订单号)[：:\\s]*(\\S+)",         "regexGroup": 1 },
+          { "targetField": "skuCode",         "sourceType": "regex", "regexPattern": "编码[：:\\s]*(\\S+)",                        "regexGroup": 1 },
+          { "targetField": "skuName",         "sourceType": "regex", "regexPattern": "品名[：:\\s]*(.+)",                          "regexGroup": 1 },
+          { "targetField": "skuSpec",         "sourceType": "regex", "regexPattern": "规格[：:\\s]*(.+)",                          "regexGroup": 1 },
+          { "targetField": "skuQuantity",     "sourceType": "regex", "regexPattern": "(?:数量|出库数量)[：:\\s]*(\\d+)",            "regexGroup": 1 },
+          { "targetField": "remark",          "sourceType": "regex", "regexPattern": "(?:备注|温度)[：:\\s]*(.+)",                  "regexGroup": 1 }
+        ],
+        "tailExtraction": {
+          "enabled": true,
+          "patterns": [
+            { "field": "storeName",       "regex": "(?:门店|收货机构|调入门店)[：:\\s]*(.+)",       "group": 1 },
+            { "field": "receiverName",    "regex": "(?:收货人|联系人)[：:\\s]*(.+)",               "group": 1 },
+            { "field": "receiverPhone",   "regex": "(?:电话|手机|联系电话)[：:\\s]*(\\d{7,15})",   "group": 1 },
+            { "field": "receiverAddress", "regex": "(?:地址|收货地址|详细地址)[：:\\s]*(.+)",       "group": 1 },
+            { "field": "externalCode",    "regex": "(?:单号|单据号|订单号)[：:\\s]*(\\S+)",         "group": 1 }
+          ]
+        }
+      },
+      "createdAt": "2026-06-05T12:00:00.000Z",
+      "updatedAt": "2026-06-05T12:00:00.000Z"
+    }
+  ]
+}
