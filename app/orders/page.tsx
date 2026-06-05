@@ -8,6 +8,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingCart,
+  Trash2,
+  CheckSquare,
+  Square,
 } from "lucide-react";
 
 interface OrderRecord {
@@ -36,6 +39,8 @@ export default function OrdersPage() {
   const [searchCode, setSearchCode] = useState("");
   const [searchName, setSearchName] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<OrderRecord | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -67,6 +72,44 @@ export default function OrdersPage() {
   const handleSearch = () => {
     setPage(1);
     fetchOrders();
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === orders.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(orders.map(o => o.id)));
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+    if (!confirm(`确定删除选中的 ${selectedIds.size} 条运单？此操作不可恢复。`)) return;
+
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: Array.from(selectedIds) }),
+      });
+      if (res.ok) {
+        setSelectedIds(new Set());
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error("批量删除失败:", err);
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const statusLabel = (status: string) => {
@@ -113,6 +156,16 @@ export default function OrdersPage() {
             <button onClick={handleSearch} className="btn-primary text-sm">
               搜索
             </button>
+            {selectedIds.size > 0 && (
+              <button
+                onClick={handleBatchDelete}
+                disabled={deleting}
+                className="btn-danger flex items-center gap-1 text-xs px-3 py-1.5"
+              >
+                <Trash2 size={14} />
+                {deleting ? "删除中..." : `删除选中(${selectedIds.size})`}
+              </button>
+            )}
             <span className="text-xs text-gray-400 ml-auto">
               共 {total} 条记录
             </span>
@@ -138,6 +191,13 @@ export default function OrdersPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
+                    <th className="px-4 py-3 text-center w-10">
+                      <button onClick={toggleSelectAll} className="text-gray-400 hover:text-primary-500">
+                        {selectedIds.size === orders.length && orders.length > 0
+                          ? <CheckSquare size={16} />
+                          : <Square size={16} />}
+                      </button>
+                    </th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">外部编码</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">收货门店</th>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500">收件人</th>
@@ -154,6 +214,13 @@ export default function OrdersPage() {
                       key={order.id}
                       className="border-b border-gray-50 hover:bg-gray-50/50 transition-colors"
                     >
+                      <td className="px-1 py-3 text-center">
+                        <button onClick={() => toggleSelect(order.id)} className="text-gray-400 hover:text-primary-500">
+                          {selectedIds.has(order.id)
+                            ? <CheckSquare size={16} className="text-primary-500" />
+                            : <Square size={16} />}
+                        </button>
+                      </td>
                       <td className="px-4 py-3 text-xs text-gray-700">
                         {order.externalCode || "-"}
                       </td>

@@ -20,9 +20,9 @@ function wordToText(buffer: Buffer): string {
   return result.value;
 }
 
-function pdfToText(buffer: Buffer): string {
+async function pdfToText(buffer: Buffer): Promise<string> {
   const pdfParse = require("pdf-parse");
-  const result = pdfParse(buffer);
+  const result = await pdfParse(buffer);
   return result.text;
 }
 
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     switch (fileType) {
       case "excel": content = excelToText(buffer); break;
       case "word":  content = wordToText(buffer);  break;
-      case "pdf":   content = pdfToText(buffer);   break;
+      case "pdf":   content = await pdfToText(buffer);   break;
     }
 
     // 调用 AI 生成规则

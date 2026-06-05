@@ -20,9 +20,9 @@ function parseWord(buffer: Buffer): any[][][] {
   return [[lines.map((l: string) => [l])]];
 }
 
-function parsePdf(buffer: Buffer): any[][][] {
+async function parsePdf(buffer: Buffer): Promise<any[][][]> {
   const pdfParse = require("pdf-parse");
-  const result = pdfParse(buffer);
+  const result = await pdfParse(buffer);
   const lines = result.text.split("\n").filter((l: string) => l.trim());
   return [[lines.map((l: string) => [l])]];
 }
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     switch (fileType) {
       case "excel": rawData = parseExcel(buffer); break;
       case "word":  rawData = parseWord(buffer);  break;
-      default:      rawData = parsePdf(buffer);   break;
+      default:      rawData = await parsePdf(buffer);   break;
     }
 
     return NextResponse.json({

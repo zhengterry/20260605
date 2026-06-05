@@ -40,20 +40,20 @@ function wordToText(buffer: Buffer): string {
   return result.value;
 }
 
-function parsePdf(buffer: Buffer): any[][][] {
+async function parsePdf(buffer: Buffer): Promise<any[][][]> {
   const pdfParse = require("pdf-parse");
-  const result = pdfParse(buffer);
+  const result = await pdfParse(buffer);
   const lines = result.text.split("\n").filter((l: string) => l.trim());
   return [[lines.map((l: string) => [l])]];
 }
 
-function pdfToText(buffer: Buffer): string {
+async function pdfToText(buffer: Buffer): Promise<string> {
   const pdfParse = require("pdf-parse");
-  const result = pdfParse(buffer);
+  const result = await pdfParse(buffer);
   return result.text;
 }
 
-function fileToText(buffer: Buffer, fileType: string): string {
+async function fileToText(buffer: Buffer, fileType: string): Promise<string> {
   if (fileType === "excel") return excelToText(buffer);
   if (fileType === "word") return wordToText(buffer);
   return pdfToText(buffer);
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     switch (fileType) {
       case "excel": rawData = parseExcel(buffer); break;
       case "word":  rawData = parseWord(buffer);  break;
-      case "pdf":   rawData = parsePdf(buffer);   break;
+      case "pdf":   rawData = await parsePdf(buffer);   break;
     }
 
     // 步骤1：尝试本地规则匹配
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 步骤2：本地规则全失败 → AI 生成规则
-    const textContent = fileToText(buffer, fileType);
+    const textContent = await fileToText(buffer, fileType);
     const aiResult = await generateRuleFromFileContent(textContent, fileType, file.name);
 
     // 用 AI 生成的规则重新解析

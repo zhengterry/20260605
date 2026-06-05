@@ -113,3 +113,24 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const s = sql();
+    const body = await request.json();
+    const ids: string[] = body.ids || [];
+
+    if (ids.length === 0) return NextResponse.json({ error: "ids 不能为空" }, { status: 400 });
+
+    if (ids.length === 1) {
+      await s`DELETE FROM orders WHERE id = ${ids[0]}`;
+    } else {
+      await s`DELETE FROM orders WHERE id = ANY(${ids})`;
+    }
+
+    return NextResponse.json({ success: true, deleted: ids.length });
+  } catch (error: any) {
+    console.error("DELETE /api/orders:", error.message);
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}

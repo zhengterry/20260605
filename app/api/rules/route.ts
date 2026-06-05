@@ -43,8 +43,18 @@ export async function GET(request: NextRequest) {
     await autoSeed();
     const s = sql();
     const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
     const limit = searchParams.get("limit");
     const search = searchParams.get("search");
+
+    // 按 ID 查询单条
+    if (id) {
+      const rows = await s`SELECT * FROM rules WHERE id = ${id}`;
+      if (rows.length === 0) {
+        return NextResponse.json({ error: "规则不存在" }, { status: 404 });
+      }
+      return NextResponse.json({ rule: rowToRule(rows[0]) });
+    }
 
     let rows: any[];
     if (search) {
