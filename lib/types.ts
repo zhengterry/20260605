@@ -90,6 +90,7 @@ export interface OrderData {
   receiverName?: string;
   receiverPhone?: string;
   receiverAddress?: string;
+  remark?: string;
   items: OrderItem[];
   status?: "pending" | "submitted" | "failed";
   createdAt?: string;

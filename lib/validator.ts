@@ -102,7 +102,7 @@ export function validateOrders(orders: OrderData[]): ValidationError[] {
     }
   }
 
-  for (const [code, indices] of codeMap) {
+  for (const [code, indices] of Array.from(codeMap)) {
     if (indices.length > 1) {
       for (const idx of indices) {
         errors.push({

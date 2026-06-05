@@ -136,7 +136,7 @@ function parseStandardTable(sheetData: any[][], config: ParseRuleConfig): OrderD
       });
     }
 
-    for (const [, group] of groups) {
+    for (const [, group] of Array.from(groups)) {
       orders.push({
         ...group.order,
         externalCode: group.order.externalCode || tailInfo.externalCode,
