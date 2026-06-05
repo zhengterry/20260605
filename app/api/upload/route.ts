@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
+import { tmpdir } from "os";
 import { v4 as uuidv4 } from "uuid";
 
-const UPLOAD_DIR = join(process.cwd(), "uploads");
+const UPLOAD_DIR = join(tmpdir(), "uploads");
 
 function ensureDir() {
   if (!existsSync(UPLOAD_DIR)) mkdirSync(UPLOAD_DIR, { recursive: true });
